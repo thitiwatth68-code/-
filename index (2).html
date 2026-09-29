@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚀 นักบินอวกาศพิทักษ์จักรวาล (Space Guardian)</title>
+    <!-- Tailwind CSS for UI overlay styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Kanit for legible Thai font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #070913;
+            color: #ffffff;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #111836 0%, #060814 100%);
+        }
+
+        canvas {
+            display: block;
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.2);
+            background: transparent;
+        }
+
+        /* Custom Glassmorphism UI Effects */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .glow-text-cyan {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.5);
+        }
+
+        .glow-text-gold {
+            text-shadow: 0 0 10px rgba(245, 158, 11, 0.8), 0 0 20px rgba(245, 158, 11, 0.5);
+        }
+
+        .btn-space {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-space:active {
+            transform: scale(0.95);
+        }
+
+        /* Touch D-Pad styling for mobile devices */
+        .dpad-btn {
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(8px);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #ffffff;
+            transition: background 0.1s, transform 0.1s;
+        }
+
+        .dpad-btn:active, .dpad-btn.active {
+            background: rgba(6, 182, 212, 0.4);
+            border-color: #06b6d4;
+            transform: scale(0.92);
+        }
+
+        /* Keyframe animations for HUD and Modals */
+        @keyframes pulse-light {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .animate-pulse-glow {
+            animation: pulse-light 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white select-none overflow-hidden">
+
+    <div id="game-container">
+        <!-- Canvas Element -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Top HUD Navigation Bar -->
+        <div id="hud-bar" class="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 flex justify-between items-center px-4 py-2 rounded-2xl glass-panel z-10">
+            <!-- Score & Level Info -->
+            <div class="flex items-center space-x-4 md:space-x-6">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl md:text-2xl">⭐</span>
+                    <div class="flex flex-col">
+                        <span class="text-xs text-slate-400">คะแนน</span>
+                        <span id="score-display" class="text-lg md:text-2xl font-bold text-amber-400 glow-text-gold">0</span>
+                    </div>
+                </div>
+
+                <div class="h-8 w-[1px] bg-slate-700"></div>
+
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl md:text-2xl">🚀</span>
+                    <div class="flex flex-col">
+                        <span class="text-xs text-slate-400">ระดับ</span>
+                        <span id="level-display" class="text-lg md:text-2xl font-bold text-cyan-400 glow-text-cyan">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Hearts -->
+            <div class="flex items-center space-x-1" id="health-display">
+                <span class="text-xl md:text-2xl transition-all duration-300">❤️</span>
+                <span class="text-xl md:text-2xl transition-all duration-300">❤️</span>
+                <span class="text-xl md:text-2xl transition-all duration-300">❤️</span>
+            </div>
+
+            <!-- Action Controls (Pause & Mute) -->
+            <div class="flex items-center space-x-2">
+                <button id="sound-btn" class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 flex items-center justify-center text-lg transition">
+                    🔊
+                </button>
+                <button id="pause-btn" class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-600 flex items-center justify-center text-lg transition">
+                    ⏸️
+                </button>
+            </div>
+        </div>
+
+        <!-- Virtual Touch D-Pad Controls for Mobile/Tablet -->
+        <div id="touch-controls" class="absolute bottom-4 left-0 right-0 px-6 flex justify-between items-end z-10 pointer-events-none">
+            <div class="grid grid-cols-3 gap-2 w-44 h-44 pointer-events-auto">
+                <div></div>
+                <button id="btn-up" class="dpad-btn shadow-lg">⬆️</button>
+                <div></div>
+                <button id="btn-left" class="dpad-btn shadow-lg">⬅️</button>
+                <div></div>
+                <button id="btn-right" class="dpad-btn shadow-lg">➡️</button>
+                <div></div>
+                <button id="btn-down" class="dpad-btn shadow-lg">⬇️</button>
+                <div></div>
+            </div>
+            
+            <div class="text-xs text-slate-400 bg-slate-900/60 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 pointer-events-none hidden sm:block">
+                💡 ใช้ลูกศร / WASD ในการบังคับยาน
+            </div>
+        </div>
+
+        <!-- START SCREEN OVERLAY -->
+        <div id="start-modal" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-30">
+            <div class="max-w-lg w-full glass-panel rounded-3xl p-6 md:p-8 text-center border border-cyan-500/30 shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/20 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+
+                <div class="inline-block p-3 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 mb-3 animate-pulse-glow">
+                    <span class="text-4xl">🚀</span>
+                </div>
+                
+                <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 mb-1">
+                    นักบินอวกาศพิทักษ์จักรวาล
+                </h1>
+                <p class="text-xs md:text-sm text-cyan-300 font-semibold mb-4 tracking-wider">SPACE GUARDIAN • วิทยาการคำนวณ ป.5</p>
+
+                <!-- Educational CS Learning Target -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 text-left border border-slate-700/80 mb-5 space-y-2">
+                    <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                        <span>🎯</span>
+                        <span>ภารกิจและเป้าหมายการเรียนรู้:</span>
+                    </div>
+                    <ul class="text-xs md:text-sm text-slate-300 space-y-1.5 pl-2">
+                        <li class="flex items-start space-x-2">
+                            <span class="text-cyan-400 font-bold">•</span>
+                            <span><b>ลำดับคำสั่ง (Sequence):</b> บังคับยานอวกาศหลบหลีกและเก็บพลังงาน</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="text-cyan-400 font-bold">•</span>
+                            <span><b>เงื่อนไข (Condition):</b> 💎+10, 🔷+25, ⭐+30 | ☄️🔥 ชนแล้ว -1 HP</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="text-cyan-400 font-bold">•</span>
+                            <span><b>การตรวจสอบการชน (Collision Detection):</b> คำนวณระยะห่างระหว่างยานกับวัตถุ</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <button id="start-btn" class="btn-space w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-lg shadow-lg shadow-cyan-500/30 border border-cyan-300/30 flex items-center justify-center space-x-2">
+                    <span>🚀</span>
+                    <span>เริ่มภารกิจพิทักษ์จักรวาล</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- PAUSE MODAL -->
+        <div id="pause-modal" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-30 hidden">
+            <div class="max-w-md w-full glass-panel rounded-3xl p-6 text-center border border-slate-700">
+                <span class="text-5xl block mb-3">⏸️</span>
+                <h2 class="text-2xl font-bold text-white mb-2">หยุดภารกิจชั่วคราว</h2>
+                <p class="text-slate-400 text-sm mb-6">พักผ่อนสักครู่ แล้วกลับมาพิทักษ์อวกาศต่อ!</p>
+
+                <div class="space-y-3">
+                    <button id="resume-btn" class="btn-space w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base shadow-md">
+                        ▶️ เล่นต่อ
+                    </button>
+                    <button id="restart-from-pause-btn" class="btn-space w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-base border border-slate-600">
+                        🔄 เริ่มเกมใหม่
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME OVER MODAL WITH CS QUIZ -->
+        <div id="gameover-modal" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-30 hidden overflow-y-auto">
+            <div class="max-w-lg w-full glass-panel rounded-3xl p-6 md:p-8 text-center border border-red-500/30 my-auto">
+                <span class="text-5xl block mb-2 animate-bounce">💥</span>
+                <h2 class="text-3xl font-extrabold text-red-500 glow-text-red mb-1">GAME OVER</h2>
+                <p class="text-slate-400 text-xs md:text-sm mb-4">ภารกิจสิ้นสุดลงแล้ว แต่การเรียนรู้ยังไม่สิ้นสุด!</p>
+
+                <!-- Score Summary Box -->
+                <div class="grid grid-cols-2 gap-3 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-800 mb-5">
+                    <div class="bg-slate-800/50 p-2.5 rounded-xl">
+                        <span class="text-xs text-slate-400 block">คะแนนรวม</span>
+                        <span id="final-score" class="text-2xl font-bold text-amber-400">0</span>
+                    </div>
+                    <div class="bg-slate-800/50 p-2.5 rounded-xl">
+                        <span class="text-xs text-slate-400 block">ระดับสูงสุด</span>
+                        <span id="final-level" class="text-2xl font-bold text-cyan-400">1</span>
+                    </div>
+                </div>
+
+                <!-- Educational Summary & Quiz Block -->
+                <div class="bg-slate-900/90 rounded-2xl p-4 text-left border border-indigo-500/30 mb-5">
+                    <div class="flex items-center space-x-2 text-indigo-300 font-bold text-xs md:text-sm mb-2">
+                        <span>🧠</span>
+                        <span>ทบทวนความรู้วิทยาการคำนวณ (ป.5)</span>
+                    </div>
+
+                    <p id="quiz-question" class="text-xs md:text-sm text-slate-200 font-medium mb-3">
+                        คำถามกำลังโหลด...
+                    </p>
+
+                    <!-- Quiz Options -->
+                    <div id="quiz-options" class="space-y-2">
+                        <!-- Dynamic options will be rendered here -->
+                    </div>
+
+                    <!-- Answer Feedback -->
+                    <div id="quiz-feedback" class="mt-3 p-2.5 rounded-xl text-xs font-semibold hidden"></div>
+                </div>
+
+                <button id="restart-btn" class="btn-space w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-lg shadow-lg shadow-emerald-500/20 border border-emerald-300/30 flex items-center justify-center space-x-2">
+                    <span>🔄</span>
+                    <span>เล่นอีกครั้ง (Restart)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SoundSynth {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCollectCrystal() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, this.ctx.currentTime + 0.15); // C6
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playCollectRare() {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(587.33, now); // D5
+                osc.frequency.setValueAtTime(880, now + 0.08); // A5
+                osc.frequency.setValueAtTime(1174.66, now + 0.16); // D6
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.25);
+            }
+
+            playCollectStar() {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(659.25, now); // E5
+                osc.frequency.setValueAtTime(830.61, now + 0.07); // G#5
+                osc.frequency.setValueAtTime(987.77, now + 0.14); // B5
+                osc.frequency.setValueAtTime(1318.51, now + 0.21); // E6
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.35);
+            }
+
+            playHitExplosion() {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                
+                // Noise buffer creation for explosion
+                const bufferSize = this.ctx.sampleRate * 0.3;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, now);
+                filter.frequency.linearRampToValueAtTime(100, now + 0.3);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+                noise.stop(now + 0.3);
+            }
+
+            playLevelUp() {
+                if (this.muted || !this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+
+            playButtonClick() {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(200, this.ctx.currentTime + 0.05);
+
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+        }
+
+        const sound = new SoundSynth();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game State Variables
+        let gameState = 'START'; // 'START', 'PLAYING', 'PAUSED', 'GAMEOVER'
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let lastTime = 0;
+        let spawnTimer = 0;
+        let levelUpBannerTimer = 0;
+
+        // Input Tracking
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            w: false,
+            a: false,
+            s: false,
+            d: false
+        };
+
+        // Screen Resize Handling
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+
+        // Starfield Background Stars
+        class Star {
+            constructor() {
+                this.reset();
+                this.y = Math.random() * canvas.height;
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = -10;
+                this.size = Math.random() * 2 + 0.5;
+                this.speed = Math.random() * 1.5 + 0.5;
+                this.alpha = Math.random() * 0.8 + 0.2;
+                this.twinkleSpeed = Math.random() * 0.02 + 0.005;
+            }
+
+            update(dt) {
+                this.y += this.speed * dt * 60;
+                this.alpha += Math.sin(Date.now() * this.twinkleSpeed) * 0.01;
+                if (this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0.1, Math.min(1, this.alpha));
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Animated Player Ship 🚀
+        class PlayerShip {
+            constructor() {
+                this.radius = 22;
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 100;
+                this.speed = 360; // Pixels per second
+                this.exhaustParticles = [];
+            }
+
+            reset() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 100;
+                this.exhaustParticles = [];
+            }
+
+            update(dt) {
+                let dx = 0;
+                let dy = 0;
+
+                if (keys.ArrowLeft || keys.a) dx -= 1;
+                if (keys.ArrowRight || keys.d) dx += 1;
+                if (keys.ArrowUp || keys.w) dy -= 1;
+                if (keys.ArrowDown || keys.s) dy += 1;
+
+                // Normalize diagonal movement
+                if (dx !== 0 && dy !== 0) {
+                    dx *= 0.7071;
+                    dy *= 0.7071;
+                }
+
+                this.x += dx * this.speed * dt;
+                this.y += dy * this.speed * dt;
+
+                // Clamp within bounds
+                const margin = this.radius + 10;
+                this.x = Math.max(margin, Math.min(canvas.width - margin, this.x));
+                this.y = Math.max(margin + 60, Math.min(canvas.height - margin - 80, this.y));
+
+                // Spawn Engine Exhaust Particles
+                if (Math.random() < 0.6) {
+                    this.exhaustParticles.push({
+                        x: this.x + (Math.random() * 12 - 6),
+                        y: this.y + 20,
+                        radius: Math.random() * 4 + 2,
+                        color: Math.random() > 0.5 ? '#06b6d4' : '#f97316',
+                        vy: Math.random() * 80 + 120,
+                        life: 0.3,
+                        maxLife: 0.3
+                    });
+                }
+
+                // Update exhaust particles
+                for (let i = this.exhaustParticles.length - 1; i >= 0; i--) {
+                    const p = this.exhaustParticles[i];
+                    p.y += p.vy * dt;
+                    p.life -= dt;
+                    p.radius = Math.max(0, p.radius - dt * 5);
+                    if (p.life <= 0) {
+                        this.exhaustParticles.splice(i, 1);
+                    }
+                }
+            }
+
+            draw() {
+                // Draw Exhaust Trail
+                this.exhaustParticles.forEach(p => {
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                });
+
+                // Draw Spaceship Body using Vector Graphics
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Glow Effect
+                ctx.shadowColor = '#06b6d4';
+                ctx.shadowBlur = 15;
+
+                // Wings
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.moveTo(-25, 15);
+                ctx.lineTo(-8, -10);
+                ctx.lineTo(8, -10);
+                ctx.lineTo(25, 15);
+                ctx.lineTo(0, 8);
+                ctx.closePath();
+                ctx.fill();
+
+                // Main Hull
+                ctx.fillStyle = '#e2e8f0';
+                ctx.beginPath();
+                ctx.moveTo(0, -28);
+                ctx.quadraticCurveTo(16, 0, 14, 20);
+                ctx.lineTo(-14, 20);
+                ctx.quadraticCurveTo(-16, 0, 0, -28);
+                ctx.closePath();
+                ctx.fill();
+
+                // Cockpit Glass
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath();
+                ctx.ellipse(0, -5, 6, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Wingtips Accent
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-24, 10, 4, 8);
+                ctx.fillRect(20, 10, 4, 8);
+
+                ctx.restore();
+            }
+        }
+
+        class SpaceObject {
+            constructor(type, level) {
+                this.type = type; // 'crystal', 'rare_crystal', 'star', 'asteroid', 'meteor'
+                this.radius = this.getRadiusByType(type);
+                this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
+                this.y = -this.radius - 20;
+                
+                // Speed calculation according to difficulty level
+                const baseSpeed = 100 + (level - 1) * 35;
+                this.speedY = baseSpeed + Math.random() * 60;
+                
+                // Level 4 & 5 add horizontal drift / weaving motion
+                this.speedX = (level >= 4) ? (Math.random() - 0.5) * 80 : 0;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotSpeed = (Math.random() - 0.5) * 2;
+                this.collectedOrHit = false;
+            }
+
+            getRadiusByType(type) {
+                switch(type) {
+                    case 'crystal': return 16;
+                    case 'rare_crystal': return 18;
+                    case 'star': return 20;
+                    case 'asteroid': return 24;
+                    case 'meteor': return 26;
+                    default: return 18;
+                }
+            }
+
+            update(dt) {
+                this.y += this.speedY * dt;
+                this.x += this.speedX * dt;
+                this.rotation += this.rotSpeed * dt;
+
+                // Bounce off side walls for moving objects
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.speedX *= -1;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                if (this.type === 'crystal') {
+                    // 💎 Cyan Crystal
+                    ctx.shadowColor = '#22d3ee';
+                    ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#06b6d4';
+                    ctx.strokeStyle = '#cffaff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -16);
+                    ctx.lineTo(12, 0);
+                    ctx.lineTo(0, 16);
+                    ctx.lineTo(-12, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (this.type === 'rare_crystal') {
+                    // 🔷 Rare Purple Crystal
+                    ctx.shadowColor = '#c084fc';
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = '#a855f7';
+                    ctx.strokeStyle = '#f3e8ff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -18);
+                    ctx.lineTo(14, -6);
+                    ctx.lineTo(10, 18);
+                    ctx.lineTo(-10, 18);
+                    ctx.lineTo(-14, -6);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else if (this.type === 'star') {
+                    // ⭐ Special Gold Star
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.shadowBlur = 18;
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        ctx.lineTo(Math.cos((18 + i * 72) * Math.PI / 180) * 18, -Math.sin((18 + i * 72) * Math.PI / 180) * 18);
+                        ctx.lineTo(Math.cos((54 + i * 72) * Math.PI / 180) * 8, -Math.sin((54 + i * 72) * Math.PI / 180) * 8);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'asteroid') {
+                    // ☄️ Asteroid Rock with Craters
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.shadowBlur = 6;
+                    ctx.fillStyle = '#64748b';
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Craters
+                    ctx.fillStyle = '#475569';
+                    ctx.beginPath();
+                    ctx.arc(-8, -6, 5, 0, Math.PI * 2);
+                    ctx.arc(6, 8, 6, 0, Math.PI * 2);
+                    ctx.arc(8, -8, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'meteor') {
+                    // 🔥 Meteorite with Fire
+                    ctx.shadowColor = '#ef4444';
+                    ctx.shadowBlur = 20;
+                    
+                    // Flame Tail
+                    ctx.fillStyle = '#f97316';
+                    ctx.beginPath();
+                    ctx.moveTo(-12, -10);
+                    ctx.lineTo(0, -32);
+                    ctx.lineTo(12, -10);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Core Rock
+                    ctx.fillStyle = '#b91c1c';
+                    ctx.strokeStyle = '#fca5a5';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Cartoon Spark/Explosion Particle
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 5 + 2;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 180 + 40;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 0.5;
+                this.maxLife = 0.5;
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.life -= dt;
+                this.radius = Math.max(0, this.radius - dt * 6);
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Floating Score / Status Text
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 0.8;
+                this.maxLife = 0.8;
+            }
+
+            update(dt) {
+                this.y -= 45 * dt;
+                this.life -= dt;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 20px Kanit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 8;
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        const stars = Array.from({ length: 80 }, () => new Star());
+        const player = new PlayerShip();
+        let spaceObjects = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        // CS Grade 5 Quiz Questions Dataset
+        const quizBank = [
+            {
+                q: "1. การกำหนดให้ 'ถ้าเก็บคริสตัลได้ แล้วบวกคะแนนเพิ่ม' ตรงกับโครงสร้างใดในโปรแกรม?",
+                options: ["ก. การทำซ้ำ (Loop)", "ข. การใช้เงื่อนไข (Condition / If)", "ค. การประกาศตัวแปร (Variable)"],
+                correct: 1,
+                explain: "ถูกต้อง! เงื่อนไข (If-Then) ใช้ตรวจสอบการทำงานเมื่อเหตุการณ์เกิดขึ้น เช่น ถ้าชนไอเทมแล้วให้บวกคะแนน"
+            },
+            {
+                q: "2. ตัวแปร (Variables) เช่น 'score' และ 'lives' ในเกมทำหน้าที่อะไร?",
+                options: ["ก. จัดเก็บและจำค่าข้อมูลที่เปลี่ยนแปลงได้ระหว่างเล่น", "ข. วาดรูปอุตกาบาตบนหน้าจอ", "ค. สั่งให้เกมหยุดทำงานแบบถาวร"],
+                correct: 0,
+                explain: "ถูกต้อง! ตัวแปรใช้บันทึกค่าข้อมูล เช่น คะแนน พลังชีวิต หรือระดับด่าน"
+            },
+            {
+                q: "3. การที่เกมคอยวาดภาพและอัปเดตตำแหน่งวัตถุตลอดเวลา 60 ครั้งต่อวินาที เรียกว่าอะไร?",
+                options: ["ก. ลูปการทำงานของเกม (Game Loop)", "ข. การแก้ไขข้อผิดพลาด (Debugging)", "ค. การแตกปัญหาย่อย (Decomposition)"],
+                correct: 0,
+                explain: "ถูกต้อง! Game Loop คือการสั่งให้โปรแกรมทำงานซ้ำๆ (Loop) เพื่อประมวลผลฟิสิกส์และแสดงผลภาพต่อเนื่อง"
+            },
+            {
+                q: "4. การคำนวณระยะห่างระหว่างยานอวกาศกับสิ่งกีดขวางเพื่อดูว่าชนกันหรือไม่ คือระบบใด?",
+                options: ["ก. ระบบสร้างเสียงสังเคราะห์", "ข. ระบบตรวจจับการชน (Collision Detection)", "ค. ระบบเปลี่ยนสีพื้นหลัง"],
+                correct: 1,
+                explain: "ถูกต้อง! Collision Detection ใช้สูตรคณิตศาสตร์วัดระยะห่างวัตถุเพื่อตรวจสอบการชนกัน"
+            },
+            {
+                q: "5. การแบ่งระบบเกมออกเป็น 'ส่วนควบคุมยาน', 'ส่วนสร้างวัตถุ', และ 'ส่วนคำนวณคะแนน' ตรงกับทักษะใด?",
+                options: ["ก. การย่อยปัญหา (Decomposition)", "ข. การเรียงลำดับการ์ด", "ค. การทำซ้ำแบบไม่รู้จบ"],
+                correct: 0,
+                explain: "ถูกต้อง! Decomposition คือการย่อยปัญหาใหญ่เป็นปัญหาย่อยๆ เพื่อให้ออกแบบและเขียนโค้ดง่ายขึ้น"
+            }
+        ];
+
+        function spawnObjects(dt) {
+            spawnTimer += dt;
+
+            // Spawn interval decreases as level increases
+            const spawnInterval = Math.max(0.4, 1.3 - (level - 1) * 0.18);
+
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0;
+
+                // Probability distribution based on Level
+                const rand = Math.random();
+                let type = 'crystal';
+
+                if (rand < 0.45) {
+                    type = 'crystal';
+                } else if (rand < 0.60) {
+                    type = 'rare_crystal';
+                } else if (rand < 0.70) {
+                    type = 'star';
+                } else if (rand < 0.88) {
+                    type = 'asteroid';
+                } else {
+                    type = 'meteor';
+                }
+
+                spaceObjects.push(new SpaceObject(type, level));
+            }
+        }
+
+        // Trigger Explosion Effects
+        function createExplosion(x, y, color, count = 16) {
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        // Trigger Score / Damage Floating Text
+        function addFloatingText(x, y, text, color) {
+            floatingTexts.push(new FloatingText(x, y, text, color));
+        }
+
+        function checkCollisions() {
+            for (let i = spaceObjects.length - 1; i >= 0; i--) {
+                const obj = spaceObjects[i];
+
+                // Circle Collision Detection Formula: (dx^2 + dy^2) < (r1 + r2)^2
+                const dx = player.x - obj.x;
+                const dy = player.y - obj.y;
+                const distSq = dx * dx + dy * dy;
+                const minDist = player.radius + obj.radius;
+
+                if (distSq < minDist * minDist && !obj.collectedOrHit) {
+                    obj.collectedOrHit = true;
+
+                    if (obj.type === 'crystal') {
+                        score += 10;
+                        sound.playCollectCrystal();
+                        addFloatingText(obj.x, obj.y, '+10', '#06b6d4');
+                        createExplosion(obj.x, obj.y, '#06b6d4', 8);
+                    } else if (obj.type === 'rare_crystal') {
+                        score += 25;
+                        sound.playCollectRare();
+                        addFloatingText(obj.x, obj.y, '+25 🔷', '#c084fc');
+                        createExplosion(obj.x, obj.y, '#a855f7', 12);
+                    } else if (obj.type === 'star') {
+                        score += 30;
+                        sound.playCollectStar();
+                        addFloatingText(obj.x, obj.y, '+30 ⭐', '#fbbf24');
+                        createExplosion(obj.x, obj.y, '#f59e0b', 16);
+                    } else if (obj.type === 'asteroid' || obj.type === 'meteor') {
+                        lives -= 1;
+                        sound.playHitExplosion();
+                        addFloatingText(obj.x, obj.y, '-1 ❤️', '#ef4444');
+                        createExplosion(obj.x, obj.y, obj.type === 'meteor' ? '#ef4444' : '#94a3b8', 20);
+                        
+                        updateHealthUI();
+
+                        if (lives <= 0) {
+                            triggerGameOver();
+                        }
+                    }
+
+                    // Remove collected / hit object
+                    spaceObjects.splice(i, 1);
+
+                    // Level progression (Every 100 points, max level 5)
+                    const newLevel = Math.min(5, Math.floor(score / 100) + 1);
+                    if (newLevel > level) {
+                        level = newLevel;
+                        levelUpBannerTimer = 2.0; // Show banner for 2 seconds
+                        sound.playLevelUp();
+                    }
+
+                    updateHUD();
+                }
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('level-display').textContent = level;
+        }
+
+        function updateHealthUI() {
+            const healthContainer = document.getElementById('health-display');
+            healthContainer.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('span');
+                heart.className = 'text-xl md:text-2xl transition-all duration-300';
+                heart.textContent = i < lives ? '❤️' : '🖤';
+                healthContainer.appendChild(heart);
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min(0.1, (timestamp - lastTime) / 1000); // Delta time capped at 100ms
+            lastTime = timestamp;
+
+            // Clear Screen
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Always update & draw background starfield
+            stars.forEach(star => {
+                star.update(dt);
+                star.draw();
+            });
+
+            if (gameState === 'PLAYING') {
+                // Update Entities
+                player.update(dt);
+                spawnObjects(dt);
+
+                // Update Objects
+                for (let i = spaceObjects.length - 1; i >= 0; i--) {
+                    const obj = spaceObjects[i];
+                    obj.update(dt);
+
+                    // Clean objects off bottom screen
+                    if (obj.y - obj.radius > canvas.height + 30) {
+                        spaceObjects.splice(i, 1);
+                    }
+                }
+
+                // Update Particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update(dt);
+                    if (particles[i].life <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                // Update Floating Texts
+                for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                    floatingTexts[i].update(dt);
+                    if (floatingTexts[i].life <= 0) {
+                        floatingTexts.splice(i, 1);
+                    }
+                }
+
+                // Collision Logic
+                checkCollisions();
+            }
+
+            // Render Game Entities
+            spaceObjects.forEach(obj => obj.draw());
+            player.draw();
+            particles.forEach(p => p.draw());
+            floatingTexts.forEach(ft => ft.draw());
+
+            // Render LEVEL UP Banner Overlay
+            if (levelUpBannerTimer > 0) {
+                levelUpBannerTimer -= dt;
+                ctx.save();
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
+                ctx.fillRect(0, canvas.height / 2 - 50, canvas.width, 100);
+
+                ctx.font = 'extrabold 36px Kanit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#22d3ee';
+                ctx.shadowColor = '#06b6d4';
+                ctx.shadowBlur = 20;
+                ctx.fillText(`🚀 LEVEL UP! ด่านที่ ${level}`, canvas.width / 2, canvas.height / 2 + 12);
+                ctx.restore();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function triggerGameOver() {
+            gameState = 'GAMEOVER';
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-level').textContent = level;
+
+            // Load Random CS Quiz Question
+            const quiz = quizBank[Math.floor(Math.random() * quizBank.length)];
+            document.getElementById('quiz-question').textContent = quiz.q;
+            
+            const optionsContainer = document.getElementById('quiz-options');
+            const feedbackEl = document.getElementById('quiz-feedback');
+            optionsContainer.innerHTML = '';
+            feedbackEl.className = 'mt-3 p-2.5 rounded-xl text-xs font-semibold hidden';
+
+            quiz.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs md:text-sm transition flex items-center justify-between';
+                btn.innerHTML = `<span>${optText}</span>`;
+                
+                btn.onclick = () => {
+                    // Disable all options after selection
+                    Array.from(optionsContainer.children).forEach(b => b.disabled = true);
+
+                    if (index === quiz.correct) {
+                        btn.classList.add('bg-emerald-950', 'border-emerald-500', 'text-emerald-300');
+                        feedbackEl.textContent = `🎉 ${quiz.explain}`;
+                        feedbackEl.className = 'mt-3 p-2.5 rounded-xl text-xs font-semibold bg-emerald-950/80 border border-emerald-500 text-emerald-300 block';
+                        sound.playCollectStar();
+                    } else {
+                        btn.classList.add('bg-red-950', 'border-red-500', 'text-red-300');
+                        feedbackEl.textContent = `❌ เฉลย: ${quiz.options[quiz.correct]} - ${quiz.explain}`;
+                        feedbackEl.className = 'mt-3 p-2.5 rounded-xl text-xs font-semibold bg-red-950/80 border border-red-500 text-red-300 block';
+                        sound.playHitExplosion();
+                    }
+                };
+
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            level = 1;
+            spawnTimer = 0;
+            levelUpBannerTimer = 0;
+            spaceObjects = [];
+            particles = [];
+            floatingTexts = [];
+            player.reset();
+            updateHUD();
+            updateHealthUI();
+        }
+
+        // Keyboard Listeners
+        window.addEventListener('keydown', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = true;
+            }
+            if (e.key === 'p' || e.key === 'P') {
+                togglePause();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = false;
+            }
+        });
+
+        // Touch Control Helper with active highlight
+        function setupTouchButton(btnId, keyName) {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+
+            const startAction = (e) => {
+                e.preventDefault();
+                keys[keyName] = true;
+                btn.classList.add('active');
+                sound.init();
+            };
+
+            const endAction = (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+                btn.classList.remove('active');
+            };
+
+            btn.addEventListener('touchstart', startAction, { passive: false });
+            btn.addEventListener('touchend', endAction, { passive: false });
+            btn.addEventListener('mousedown', startAction);
+            btn.addEventListener('mouseup', endAction);
+            btn.addEventListener('mouseleave', endAction);
+        }
+
+        setupTouchButton('btn-up', 'ArrowUp');
+        setupTouchButton('btn-down', 'ArrowDown');
+        setupTouchButton('btn-left', 'ArrowLeft');
+        setupTouchButton('btn-right', 'ArrowRight');
+
+        function togglePause() {
+            if (gameState === 'PLAYING') {
+                gameState = 'PAUSED';
+                document.getElementById('pause-modal').classList.remove('hidden');
+            } else if (gameState === 'PAUSED') {
+                gameState = 'PLAYING';
+                document.getElementById('pause-modal').classList.add('hidden');
+            }
+        }
+
+        // Start Game Button
+        document.getElementById('start-btn').onclick = () => {
+            sound.init();
+            sound.playButtonClick();
+            resetGame();
+            gameState = 'PLAYING';
+            document.getElementById('start-modal').classList.add('hidden');
+        };
+
+        // Pause Button Top Navigation
+        document.getElementById('pause-btn').onclick = () => {
+            sound.playButtonClick();
+            togglePause();
+        };
+
+        // Resume Button inside Modal
+        document.getElementById('resume-btn').onclick = () => {
+            sound.playButtonClick();
+            togglePause();
+        };
+
+        // Restart from Pause Modal
+        document.getElementById('restart-from-pause-btn').onclick = () => {
+            sound.playButtonClick();
+            resetGame();
+            gameState = 'PLAYING';
+            document.getElementById('pause-modal').classList.add('hidden');
+        };
+
+        // Restart from Game Over Modal
+        document.getElementById('restart-btn').onclick = () => {
+            sound.playButtonClick();
+            resetGame();
+            gameState = 'PLAYING';
+            document.getElementById('gameover-modal').classList.add('hidden');
+        };
+
+        // Mute / Unmute Sound Toggle
+        const soundBtn = document.getElementById('sound-btn');
+        soundBtn.onclick = () => {
+            sound.init();
+            sound.muted = !sound.muted;
+            soundBtn.textContent = sound.muted ? '🔇' : '🔊';
+        };
+
+        window.onload = () => {
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
